@@ -2,6 +2,7 @@ from collections import OrderedDict
 from functions import use_iterable_nums_as_index
 import constants as c
 import datetime
+import re
 
 
 class WorkoutLog:
@@ -26,15 +27,15 @@ class WorkoutLog:
         for index, line in enumerate(self.raw_content):
             if any(day in line for day in c.DOTW) and any(month in line for month in c.MONTHS):
                 workout_start_indices.append(index)
-            elif 'Title: ' in line:
+            elif re.search('Title*', line):
                 workout_names.append(line.split(': ')[1].strip())
-            elif 'Workout Log: ' in line:
+            elif re.search('Workout Log:*', line):
                 self.athlete_name = line.split(': ')[1].strip()
-            elif 'Start Date: ' in line:
+            elif re.search('Start Date:*', line):
                 self.start_date = datetime.date(int(line.split(': ')[1].split('-')[0]),
                                                 int(line.split(': ')[1].split('-')[1]),
                                                 int(line.split(': ')[1].split('-')[2]))
-            elif 'End Date: ' in line:
+            elif re.search('End Date:*', line):
                 self.end_date = datetime.date(int(line.split(': ')[1].split('-')[0]),
                                               int(line.split(': ')[1].split('-')[1]),
                                               int(line.split(': ')[1].split('-')[2]))
@@ -57,8 +58,8 @@ class WorkoutLog:
         return 'WorkoutLog(\'{}\')'.format(self.file_name)
 
     def __str__(self):
-        l = [line.split('\n')[0] for line in self.raw_content]
-        return '\n'.join(l)
+        log = [line.split('\n')[0] for line in self.raw_content]
+        return '\n'.join(log)
 
     def __len__(self):
         return len(self.workouts)
@@ -116,11 +117,14 @@ class Workout:
         return 'Exercise(\'{}, {}\')'.format(self.title, self.raw_content)
 
     def __str__(self):
-        l = [line.split('\n')[0] for line in self.raw_content]
-        return '\n'.join(l)
+        workout = [line.split('\n')[0] for line in self.raw_content]
+        return '\n'.join(workout)
 
     def __len__(self):
         return len(self.exercises)
+
+    def __getitem__(self, exercise_number):
+        return self.exercises[exercise_number]
 
 
 class Exercise:
@@ -162,11 +166,14 @@ class Exercise:
         return 'Exercise(\'{}\')'.format(self.raw_content)
 
     def __str__(self):
-        l = [line.split('\n')[0] for line in self.raw_content]
-        return '\n'.join(l)
+        exercise = [line.split('\n')[0] for line in self.raw_content]
+        return '\n'.join(exercise)
 
     def __len__(self):
         return len(self.set)  # TODO: find out how to get total number of sets, not the number of set objects
+
+    def __getitem__(self, set_number):
+        return self.set[set_number]
 
 class Set:
 
