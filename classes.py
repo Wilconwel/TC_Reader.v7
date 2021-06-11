@@ -70,15 +70,16 @@ class WorkoutLog:
         return self.workouts[key_value]
 
 
-class Workout:
+class Workout(WorkoutLog):
 
-    def __init__(self, title, raw_content):
-        self.title = title
+    def __init__(self, workout_title, raw_content, athlete_name):
+        super().__init__(athlete_name)
+        self.workout_title = workout_title
         self.raw_content = raw_content
         self.exercises = []
         self.date = None
         self.status = None
-        self.type = None
+        self.workout_type = None
 
         self.parse()
 
@@ -109,12 +110,12 @@ class Workout:
             self.exercises.append(Exercise(lines))
 
         if any(c.RELEVANT_DATA_IDENTIFIER in string for string in self.raw_content) is True:
-            self.type = 'Workout'
+            self.workout_type = 'Workout'
         else:
-            self.type = 'Form'
+            self.workout_type = 'Form'
 
     def __repr__(self):
-        return 'Exercise(\'{}, {}\')'.format(self.title, self.raw_content)
+        return 'Exercise(\'{}, {}\')'.format(self.workout_title, self.raw_content)
 
     def __str__(self):
         workout = [line.split('\n')[0] for line in self.raw_content]
@@ -127,10 +128,12 @@ class Workout:
         return self.exercises[exercise_number]
 
 
-class Exercise:
-    def __init__(self, raw_content):
+class Exercise(Workout):
+
+    def __init__(self, raw_content, workout_title, date, athlete_name):
+        super().__init__(workout_title, date, athlete_name)
         self.raw_content = raw_content
-        self.name = None
+        self.exercise_name = None
         self.type = None
         self.category = None
         self.priority = None
@@ -144,9 +147,9 @@ class Exercise:
 
         for index, line in enumerate(self.raw_content):
             if line[0].isupper() and ')' in line and ':' in line:
-                self.name = line.split(': ')[0].split(') ')[1].strip()
+                self.exercise_name = line.split(': ')[0].split(') ')[1].strip()
             elif c.RELEVANT_DATA_IDENTIFIER in line:
-                self.set.append(Set(line.split('❍ ')[1]))
+                self.set.append(Set(line.split(c.RELEVANT_DATA_IDENTIFIER)[1].strip()))
             elif line.startswith('   '):
                 results_start = index
                 results_end = len(self.raw_content)
@@ -167,6 +170,7 @@ class Exercise:
 
     def __str__(self):
         exercise = [line.split('\n')[0] for line in self.raw_content]
+        exercise.insert(0, Workout)
         return '\n'.join(exercise)
 
     def __len__(self):
@@ -175,11 +179,11 @@ class Exercise:
     def __getitem__(self, set_number):
         return self.set[set_number]
 
-class Set:
+class Set(Exercise):
 
-    def __init__(self, raw_content):
+    def __init__(self, raw_content, exercise_name, category, priority, workout_title, date, athlete_name):
+        super().__init__(exercise_name, category, priority, workout_title, date, athlete_name)
         self.raw_content = raw_content
-        self.stripped_data = None
         self.sets = None
         self.reps = None
         self.min_reps = None
@@ -202,9 +206,9 @@ class Set:
                 total += float(num)
             return total / total_num
 
-        self.stripped_data = self.raw_content.strip('\n').split(' ')
+        stripped_data = [self.raw_content.strip('\n').split(' ')]
 
-        for index, string in enumerate(self.stripped_data):
+        for index, string in enumerate(stripped_data):
             if 'x' in string:
                 self.x_index = index
             elif '@' in string or '%' in string:
@@ -212,7 +216,7 @@ class Set:
             else:
                 continue
 
-        for index, string in enumerate(self.stripped_data):
+        for index, string in enumerate(stripped_data):
             if string.isnumeric() and index < self.x_index:
                 self.sets = int(string)
             elif string.isnumeric() and index > self.x_index:
@@ -226,17 +230,17 @@ class Set:
                 self.max_reps = int(string.split('-')[1])
 
         if len(self.intensity_indices) == 0:
-            for x in self.stripped_data:
+            for x in stripped_data:
                 if ('^' or '^same' or 'weight^') in x:
                     pass  # TODO: find out how to retrieve previous sets' intensity
         elif len(self.intensity_indices) == 1:
-            string = self.stripped_data[self.intensity_indices[0]]
+            string = stripped_data[self.intensity_indices[0]]
             if '@' in string:
                 self.rpe = int(string.replace('@', ''))
             elif '%' in string:
                 self.p1rm = (float(string.replace('%', ''))) / 100
         elif len(self.intensity_indices) == 2:
-            intensity_list = [self.stripped_data[self.intensity_indices[0]], self.stripped_data[self.intensity_indices[
+            intensity_list = [stripped_data[self.intensity_indices[0]], stripped_data[self.intensity_indices[
                 1]]]
             for x in intensity_list:
                 if '@' in x:
@@ -261,16 +265,4 @@ class Set:
     def __str__(self):
         return self.raw_content
 
-# test commit
-
-        # print(self.stripped_data)
-        # print('Set # is: ' + str(self.sets))
-        # print('X index is: ' + str(self.x_index))
-        # print('Rep # is : ' + str(self.reps))
-        # print('Rep min is : ' + str(self.min_reps))
-        # print('Rep max is : ' + str(self.max_reps))
-        # print('Intensity index is: ' + str(self.intensity_indices))
-        # print('RPE is: @' + str(self.rpe))
-        # print('%1RM is: ' + str(self.p1rm))
-        # print('')
 
