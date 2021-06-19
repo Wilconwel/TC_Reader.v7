@@ -15,8 +15,6 @@ class WorkoutLog:
         self.start_date = None
         self.end_date = None
 
-        self.parse()
-
     def parse(self):
         """ Rip through the text file, find workouts and athlete name"""
         with open(self.file_name, 'r') as f:
@@ -50,9 +48,10 @@ class WorkoutLog:
         workouts_lines = []
         for tup in workout_indices:
             workouts_lines.append(use_iterable_nums_as_index(self.raw_content, tup))
+        for index, lst in enumerate(workouts_lines):
+            self.workouts[workout_names[index]] = Workout(workout_names[index], lst, self.athlete_name)
 
-        for index, line in enumerate(workouts_lines):
-            self.workouts[workout_names[index]] = Workout(workout_names[index], line)
+        self.parse()
 
     def __repr__(self):
         return 'WorkoutLog(\'{}\')'.format(self.file_name)
@@ -80,8 +79,6 @@ class Workout(WorkoutLog):
         self.date = None
         self.status = None
         self.workout_type = None
-
-        self.parse()
 
     def parse(self):
         """ Rip through the workout, find exercises, date, and status"""
@@ -114,6 +111,8 @@ class Workout(WorkoutLog):
         else:
             self.workout_type = 'Form'
 
+        self.parse()
+
     def __repr__(self):
         return 'Exercise(\'{}, {}\')'.format(self.workout_title, self.raw_content)
 
@@ -140,8 +139,6 @@ class Exercise(Workout):
         self.results = None
         self.set = []
 
-        self.parse()
-
     def parse(self):
         """ Rip through the exercise data, find the raw data, name, and relevant set data"""
 
@@ -165,6 +162,8 @@ class Exercise(Workout):
         else:
             self.type = 'Other'
 
+        self.parse()
+
     def __repr__(self):
         return 'Exercise(\'{}\')'.format(self.raw_content)
 
@@ -179,6 +178,7 @@ class Exercise(Workout):
     def __getitem__(self, set_number):
         return self.set[set_number]
 
+
 class Set(Exercise):
 
     def __init__(self, raw_content, exercise_name, category, priority, workout_title, date, athlete_name):
@@ -192,9 +192,6 @@ class Set(Exercise):
         self.p1rm = None
         self.x_index = None
         self.intensity_indices = []
-
-        self.parse()
-        self.rpe_p1rm_brzycki_convert()
 
     def parse(self):
         """ Rip through the set data, find the raw data, # sets, # reps, RPE, and % of 1RM"""
@@ -252,12 +249,16 @@ class Set(Exercise):
         elif len(self.intensity_indices) > 2:
             raise TypeError('There cannot be more than two RPEs or %1RM targets per set.')
 
+        self.parse()
+
     def rpe_p1rm_brzycki_convert(self):
         if self.p1rm is None and self.rpe is not None and self.reps is not None:
             adjusted_reps = self.reps + (10 - self.rpe)  # adds reps from failure to actual reps to get total reps
             self.p1rm = round((1 / (36 / (37 - adjusted_reps))), 2)
         elif self.rpe is None and self.p1rm is not None and self.reps is not None:
             self.rpe = round(((36 * self.p1rm) + self.reps - 27), 2)
+
+        self.rpe_p1rm_brzycki_convert()
 
     def __repr__(self):
         return 'Exercise(\'{}\')'.format(self.raw_content)
