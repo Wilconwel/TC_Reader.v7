@@ -51,8 +51,6 @@ class WorkoutLog:
         for index, lst in enumerate(workouts_lines):
             self.workouts[workout_names[index]] = Workout(workout_names[index], lst, self.athlete_name)
 
-        self.parse()
-
     def __repr__(self):
         return 'WorkoutLog(\'{}\')'.format(self.file_name)
 
@@ -65,6 +63,7 @@ class WorkoutLog:
 
     def __getitem__(self, workout_number):
         key_list = list(self.workouts)
+        print(key_list)
         key_value = key_list[workout_number]
         return self.workouts[key_value]
 
@@ -110,8 +109,6 @@ class Workout(WorkoutLog):
             self.workout_type = 'Workout'
         else:
             self.workout_type = 'Form'
-
-        self.parse()
 
     def __repr__(self):
         return 'Exercise(\'{}, {}\')'.format(self.workout_title, self.raw_content)
@@ -161,8 +158,6 @@ class Exercise(Workout):
             self.type = 'Exercise'
         else:
             self.type = 'Other'
-
-        self.parse()
 
     def __repr__(self):
         return 'Exercise(\'{}\')'.format(self.raw_content)
@@ -249,16 +244,12 @@ class Set(Exercise):
         elif len(self.intensity_indices) > 2:
             raise TypeError('There cannot be more than two RPEs or %1RM targets per set.')
 
-        self.parse()
-
     def rpe_p1rm_brzycki_convert(self):
         if self.p1rm is None and self.rpe is not None and self.reps is not None:
             adjusted_reps = self.reps + (10 - self.rpe)  # adds reps from failure to actual reps to get total reps
             self.p1rm = round((1 / (36 / (37 - adjusted_reps))), 2)
         elif self.rpe is None and self.p1rm is not None and self.reps is not None:
             self.rpe = round(((36 * self.p1rm) + self.reps - 27), 2)
-
-        self.rpe_p1rm_brzycki_convert()
 
     def __repr__(self):
         return 'Exercise(\'{}\')'.format(self.raw_content)
