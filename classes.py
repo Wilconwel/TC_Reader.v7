@@ -79,6 +79,13 @@ class Workout:
         self.date = None
         self.status = None
         self.type = None
+        self.mesocycle = None
+        self.microcycle = None
+        self.day = None
+
+        if re.search('[0-9]\.[0-9]\.', self.title):
+            self.mesocycle, self.microcycle, self.day = (int(self.title.split('.')[0]), int(self.title.split('.')[1]),
+                                                         self.title.split('.')[2])
 
         self.parse()
 
@@ -91,7 +98,7 @@ class Workout:
                 self.date = datetime.date(int(line.split(', ')[1]),
                                           int(c.MONTHS.index(line.split(' ')[1]) + 1),
                                           int(line.split(' ')[2].strip(',')))
-            elif 'Status: ' in line:
+            elif re.search('Status*', line):
                 self.status = line.split(': ')[1].title()
             elif line[0].isupper() and ')' in line and ':' in line:
                 exercise_start_indices.append(index)
