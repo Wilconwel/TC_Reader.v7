@@ -67,9 +67,7 @@ class WorkoutLog:
     def __getitem__(self, k):
         if isinstance(k, slice):
             key_list = list(self.workouts)
-            print(key_list)
             keys = key_list[k.start:k.stop:k.step]
-            print(keys)
             for idx, key in enumerate(keys):
                 if k.start <= idx < k.stop:
                     return self.workouts.get(key)
