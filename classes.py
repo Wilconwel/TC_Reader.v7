@@ -59,15 +59,20 @@ class WorkoutLog:
 
     def __str__(self):
         log = [line.split('\n')[0] for line in self.raw_content]
-        return '\n'.join(log)
+        return log
 
     def __len__(self):
         return len(self.workouts)
 
-    def __getitem__(self, workout_number):
-        key_list = list(self.workouts)
-        key_value = key_list[workout_number]
-        return self.workouts[key_value]
+    def __getitem__(self, k):
+        if isinstance(k, slice):
+            key_list = list(self.workouts)
+            print(key_list)
+            keys = key_list[k.start:k.stop:k.step]
+            print(keys)
+            for idx, key in enumerate(keys):
+                if k.start <= idx < k.stop:
+                    return self.workouts.get(key)
 
 
 class Workout:
