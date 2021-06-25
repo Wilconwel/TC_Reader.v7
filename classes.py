@@ -273,8 +273,6 @@ class Set:
     def __str__(self):
         return self.raw_content
 
-# test commit
-
         # print(self.stripped_data)
         # print('Set # is: ' + str(self.sets))
         # print('X index is: ' + str(self.x_index))
