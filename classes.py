@@ -169,10 +169,10 @@ class Exercise:
             else:
                 continue
 
-        if any(c.RELEVANT_DATA_IDENTIFIER in string for string in self.raw_content) is True:
-            self.type = 'Exercise'
-        else:
+        if not self.set:
             self.type = 'Other'
+        else:
+            self.type = 'Exercise'
 
     def __repr__(self):
         return 'Exercise(\'{}\')'.format(self.raw_content)
@@ -186,6 +186,7 @@ class Exercise:
 
     def __getitem__(self, set_number):
         return self.set[set_number]
+
 
 class Set:
 
