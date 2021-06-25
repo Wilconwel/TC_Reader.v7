@@ -66,14 +66,13 @@ class WorkoutLog:
 
     def __getitem__(self, k):
         key_list = list(self.workouts)
-        print(key_list)
         if isinstance(k, slice):
             keys = key_list[k.start:k.stop:k.step]
-            print(keys)
-            for key in enumerate(keys):
-                return self.workouts.get(key)
+            workouts = [self.workouts.get(key) for key in keys]
+            return workouts
         else:
-            pass
+            key = key_list[k]
+            return self.workouts.get(key)
 
 
 class Workout:
@@ -127,7 +126,7 @@ class Workout:
             self.type = 'Form'
 
     def __repr__(self):
-        return 'Exercise(\'{}, {}\')'.format(self.title, self.raw_content)
+        return 'Workout(\'{}, {}\')'.format(self.title, self.raw_content)
 
     def __str__(self):
         workout = [line.split('\n')[0] for line in self.raw_content]
@@ -269,7 +268,7 @@ class Set:
             self.rpe = round(((36 * self.p1rm) + self.reps - 27), 2)
 
     def __repr__(self):
-        return 'Exercise(\'{}\')'.format(self.raw_content)
+        return 'Set(\'{}\')'.format(self.raw_content)
 
     def __str__(self):
         return self.raw_content
