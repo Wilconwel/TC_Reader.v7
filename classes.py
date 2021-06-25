@@ -157,7 +157,7 @@ class Exercise:
         for index, line in enumerate(self.raw_content):
             if line[0].isupper() and ')' in line and ':' in line:
                 self.name = line.split(': ')[0].split(') ')[1].strip()
-            elif c.RELEVANT_DATA_IDENTIFIER in line:
+            elif line.startswith(c.RELEVANT_DATA_IDENTIFIER):
                 self.set.append(Set(line.split('❍ ')[1]))
             elif line.startswith('   '):
                 results_start = index
