@@ -2,6 +2,7 @@ DOTW = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sun
 MONTHS = ('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December')
 END_WORKOUT_IDENTIFIER = '-----'
 RELEVANT_DATA_IDENTIFIER = '❍'
+EXERCISE_INDENTIFIER = ''
 INTENSITY_IDENTIFIER = ('@', 'w/', 'with', 'until')
 MUSCLES = ['Gastrocnemius',
            'Quadriceps',

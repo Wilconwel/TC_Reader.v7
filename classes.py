@@ -155,7 +155,7 @@ class Exercise:
         """ Rip through the exercise data, find the raw data, name, and relevant set data"""
 
         for index, line in enumerate(self.raw_content):
-            if line[0].isupper() and ')' in line and ':' in line:
+            if line[0].isupper() and ': ' in line:
                 self.name = line.split(': ')[0].split(') ')[1].strip()
             elif line.startswith(c.RELEVANT_DATA_IDENTIFIER):
                 self.set.append(Set(line.split('❍ ')[1]))
@@ -284,4 +284,3 @@ class Set:
         # print('RPE is: @' + str(self.rpe))
         # print('%1RM is: ' + str(self.p1rm))
         # print('')
-
