@@ -4,10 +4,21 @@ import constants as c
 import datetime
 import re
 
+class TrueCoachReader:
+    def __init__(self, parent):
+        self._parent = parent
 
-class WorkoutLog:
+    def _get_parent(self, parent_type=None):
+        if isinstance(self, parent_type if parent_type is not None else WorkoutLog):
+            return self
+        else:
+            return self._parent._get_parent(parent_type)
+
+
+class WorkoutLog(TrueCoachReader):
 
     def __init__(self, filename):
+        super().__init__(self)
         self.file_name = filename
         self.raw_content = None
         self.workouts = OrderedDict()
@@ -52,7 +63,7 @@ class WorkoutLog:
             workouts_lines.append(use_iterable_nums_as_index(self.raw_content, tup))
 
         for index, line in enumerate(workouts_lines):
-            self.workouts[workout_names[index]] = Workout(workout_names[index], line)
+            self.workouts[workout_names[index]] = Workout(self, workout_names[index], line)
 
     def __repr__(self):
         return 'WorkoutLog(\'{}\')'.format(self.file_name)
@@ -74,10 +85,21 @@ class WorkoutLog:
             key = key_list[k]
             return self.workouts.get(key)
 
+    def get_sets_by_exercise(self, exercise):
+        # foo = [l_exer for l_exer in [l_workout.exercises for l_workout in self.workouts.values()] if l_exer == exercise]
+        ret_sets = []
+        for l_workouts in self.workouts.values():
+            for l_exer in l_workouts:
+                if l_exer.name == exercise:
+                    for l_protocol in l_exer.protocols:
+                        ret_sets.append(l_protocol.sets)
+        return ret_sets
 
-class Workout:
 
-    def __init__(self, title, raw_content):
+class Workout(TrueCoachReader):
+
+    def __init__(self, parent, title, raw_content):
+        super().__init__(parent)
         self.title = title
         self.raw_content = raw_content
         self.exercises = []
@@ -118,7 +140,7 @@ class Workout:
             exercises_lines.append(use_iterable_nums_as_index(self.raw_content, tup))
 
         for lines in exercises_lines:
-            self.exercises.append(Exercise(lines))
+            self.exercises.append(Exercise(self, lines))
 
         if any(c.RELEVANT_DATA_IDENTIFIER in string for string in self.raw_content) is True:
             self.type = 'Workout'
@@ -139,15 +161,16 @@ class Workout:
         return self.exercises[exercise_number]
 
 
-class Exercise:
-    def __init__(self, raw_content):
+class Exercise(TrueCoachReader):
+    def __init__(self, parent, raw_content):
+        super().__init__(parent)
         self.raw_content = raw_content
         self.name = None
         self.type = None
         self.category = None
         self.priority = None
         self.results = None
-        self.set = []
+        self.protocols = []
 
         self.parse()
 
@@ -158,7 +181,7 @@ class Exercise:
             if line[0].isupper() and ': ' in line:
                 self.name = line.split(': ')[0].split(') ')[1].strip()
             elif line.startswith(c.RELEVANT_DATA_IDENTIFIER):
-                self.set.append(Set(line.split('❍ ')[1]))
+                self.protocols.append(Protocol(self, line.split('❍ ')[1]))
             elif line.startswith('   '):
                 results_start = index
                 results_end = len(self.raw_content)
@@ -169,7 +192,7 @@ class Exercise:
             else:
                 continue
 
-        if not self.set:
+        if not self.protocols:
             self.type = 'Other'
         else:
             self.type = 'Exercise'
@@ -182,15 +205,19 @@ class Exercise:
         return '\n'.join(exercise)
 
     def __len__(self):
-        return len(self.set)  # TODO: find out how to get total number of sets, not the number of set objects
+        return sum([protocol.sets for protocol in self.protocols])
 
     def __getitem__(self, set_number):
-        return self.set[set_number]
+        return self.protocols[set_number]
+
+    def total_sets(self):
+        return sum(self._get_parent().get_sets_by_exercise(self.name))
 
 
-class Set:
+class Protocol(TrueCoachReader):
 
-    def __init__(self, raw_content):
+    def __init__(self, parent, raw_content):
+        super().__init__(parent)
         self.raw_content = raw_content
         self.stripped_data = None
         self.sets = None
@@ -273,14 +300,3 @@ class Set:
 
     def __str__(self):
         return self.raw_content
-
-        # print(self.stripped_data)
-        # print('Set # is: ' + str(self.sets))
-        # print('X index is: ' + str(self.x_index))
-        # print('Rep # is : ' + str(self.reps))
-        # print('Rep min is : ' + str(self.min_reps))
-        # print('Rep max is : ' + str(self.max_reps))
-        # print('Intensity index is: ' + str(self.intensity_indices))
-        # print('RPE is: @' + str(self.rpe))
-        # print('%1RM is: ' + str(self.p1rm))
-        # print('')
