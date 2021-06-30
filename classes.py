@@ -1,5 +1,8 @@
 from collections import OrderedDict
+
+import exercise_categories
 from functions import use_iterable_nums_as_index
+import exercise_categories as ec
 import constants as c
 import datetime
 import re
@@ -85,15 +88,36 @@ class WorkoutLog(TrueCoachReader):
             key = key_list[k]
             return self.workouts.get(key)
 
-    def get_sets_by_exercise(self, exercise):
-        # foo = [l_exer for l_exer in [l_workout.exercises for l_workout in self.workouts.values()] if l_exer == exercise]
-        ret_sets = []
+    def get_parameter_by_exercise(self, exercise, parameter):  # TODO: find way to display all exercises when looking at this funct 
+        """Finds the data for the given parameter for the every instance of the given exercise, returns a list.
+
+        Positional arguments:
+        1 -- the exercise to be searched inputted as a string
+        2 -- the data to be returned inputted as a string (must be 'sets', 'reps', 'p1rm', 'rpe')
+        """
+        ret_values = []
         for l_workouts in self.workouts.values():
             for l_exer in l_workouts:
                 if l_exer.name == exercise:
-                    for l_protocol in l_exer.protocols:
-                        ret_sets.append(l_protocol.sets)
-        return ret_sets
+                        for l_protocol in l_exer.protocols:
+                            ret_values.append(l_protocol.__dir__[parameter]
+        return ret_values
+
+    def get_parameter_by_exercise_category(self, exercise_category, parameter):  # TODO: find way to display all exercises when looking at this funct
+        """Finds the data for the given parameter for all exercises instances in the given exercise category,
+        returns a list.
+
+        Positional arguments:
+        1 -- the exercise category to be searched inputted as a string
+        2 -- the data to be returned inputted as a string (must be 'sets', 'reps', 'p1rm', 'rpe')
+        """
+        ret_values = []
+        for l_workouts in self.workouts.values():
+            for l_exer in l_workouts:
+                if l_exer.category == exercise_category:
+                        for l_protocol in l_exer.protocols:
+                            ret_values.append(l_protocol.__dir__[parameter]
+        return ret_values
 
 
 class Workout(TrueCoachReader):
@@ -168,7 +192,7 @@ class Exercise(TrueCoachReader):
         self.name = None
         self.type = None
         self.category = None
-        self.priority = None
+        self.classification = None
         self.results = None
         self.protocols = []
 
@@ -178,7 +202,8 @@ class Exercise(TrueCoachReader):
         """ Rip through the exercise data, find the raw data, name, and relevant set data"""
 
         for index, line in enumerate(self.raw_content):
-            if line[0].isupper() and ': ' in line:
+            if index == 0:
+            elif line[0].isupper() and ': ' in line:  # TODO: add regex for this
                 self.name = line.split(': ')[0].split(') ')[1].strip()
             elif line.startswith(c.RELEVANT_DATA_IDENTIFIER):
                 self.protocols.append(Protocol(self, line.split('❍ ')[1]))
@@ -196,6 +221,17 @@ class Exercise(TrueCoachReader):
             self.type = 'Other'
         else:
             self.type = 'Exercise'
+
+        if self.type == 'Exercise':  # TODO: ask Justin if this is slow as shit
+            for char in self.raw_content[0]:
+                try:
+                    self.category = ec.exercise_categories.get(char)
+                    if self.category is None:
+                        continue
+                    if self.category is not None:
+                        break
+                except KeyError:
+                    continue
 
     def __repr__(self):
         return 'Exercise(\'{}\')'.format(self.raw_content)
