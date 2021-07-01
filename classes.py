@@ -202,7 +202,7 @@ class Exercise(TrueCoachReader):
     def parse(self):
         """ Rip through the exercise data, find the raw data, name, and relevant set data"""
         for index, line in enumerate(self.raw_content):
-            if line[0].isupper() and ': ' in line and ')' in line:  # TODO: add regex for this
+            if re.search('^[A-Z][1-9]?\) [^:\n]*:.*', line):  # TODO: add regex for this
                 self.name = line.split(': ')[0].split(') ')[1].strip()
             elif line.startswith(c.RELEVANT_DATA_IDENTIFIER):
                 self.protocols.append(Protocol(self, line.split('❍ ')[1]))
