@@ -89,7 +89,7 @@ class WorkoutLog(TrueCoachReader):
             return self.workouts.get(key)  # TODO: find way to slice workout objects
 
     def get_parameter_by_exercise(self, exercise, parameter):
-        """Find the data for the given parameter for the every instance of the given exercise, return a list.
+        """Find the data for the given parameter for the every instance of the given exercise, return a list
 
         Positional arguments:
         1 -- the exercise to be searched, inputted as a string
@@ -104,7 +104,7 @@ class WorkoutLog(TrueCoachReader):
         return ret_values
 
     def get_parameter_by_exercise_category(self, exercise_category, parameter):
-        """Find the data for the given parameter for all exercise instances in the given exercise category, return a list.
+        """Find the data for the given parameter for all exercise instances in the given exercise category, return a list
 
         Positional arguments:
         1 -- the exercise category to be searched, inputted as a string
@@ -202,11 +202,13 @@ class Exercise(TrueCoachReader):
 
     def parse(self):
         """ Rip through the exercise data, find the raw data, name, and relevant set data"""
+        counter = 0  # counter for Protocol index
         for index, line in enumerate(self.raw_content):
-            if re.search('^[A-Z][1-9]?\) [^:\n]*:.*', line):  # TODO: add regex for this
+            if re.search('^[A-Z][1-9]?\) [^:\n]*:.*', line):
                 self.name = line.split(': ')[0].split(') ')[1].strip()
             elif line.startswith(c.RELEVANT_DATA_IDENTIFIER):
-                self.protocols.append(Protocol(self, line.split('❍ ')[1]))
+                self.protocols.append(Protocol(self, counter, line.split('❍ ')[1]))
+                counter += 1
             elif line.startswith('   '):
                 results_start = index
                 results_end = len(self.raw_content)
@@ -217,13 +219,13 @@ class Exercise(TrueCoachReader):
             else:
                 continue
 
-        # if there are no sets than this 'exercise' is something else
+        # if there are no sets, then this 'exercise' is something else
         if not self.protocols:
             self.type = 'Other'
         else:
             self.type = 'Exercise'
 
-        # if this is an exercise, try to find category and classification from the first line of the txt
+        # if this is an exercise, try to find category and classification from the first line of the raw content
         if self.type == 'Exercise':  # TODO: ask Justin if this is slow as shit
             for char in self.raw_content[0]:
                 try:
@@ -253,8 +255,9 @@ class Exercise(TrueCoachReader):
 
 class Protocol(TrueCoachReader):
 
-    def __init__(self, parent, raw_content):
+    def __init__(self, parent, protocol_index, raw_content):
         super().__init__(parent)
+        self.protocol_index = protocol_index  # index of Protocol within Exercise starting at 0
         self.raw_content = raw_content
         self.stripped_data = None
         self.sets = None
@@ -264,10 +267,10 @@ class Protocol(TrueCoachReader):
         self.rpe = None
         self.p1rm = None
         self.x_index = None
-        self.intensity_indices = []
+        self._intensity_indices = []
 
         self.parse()
-        self.rpe_p1rm_brzycki_convert()
+        self._rpe_p1rm_brzycki_convert()
 
     def parse(self):
         """ Rip through the set data, find the raw data, # sets, # reps, RPE, and % of 1RM"""
@@ -284,7 +287,7 @@ class Protocol(TrueCoachReader):
             if 'x' in string:
                 self.x_index = index
             elif '@' in string or '%' in string:
-                self.intensity_indices.append(index)
+                self._intensity_indices.append(index)
             else:
                 continue
 
@@ -296,24 +299,26 @@ class Protocol(TrueCoachReader):
                 self.min_reps = int(string)
                 self.max_reps = int(string)
             elif '-' in string and self.x_index < index < \
-                    self.intensity_indices[0]:
+                    self._intensity_indices[0]:
                 self.reps = float(average([rep for rep in string.split('-')]))
                 self.min_reps = int(string.split('-')[0])
                 self.max_reps = int(string.split('-')[1])
 
-        if len(self.intensity_indices) == 0:
+        if len(self._intensity_indices) == 0:
             for x in self.stripped_data:
                 if ('^' or '^same' or 'weight^') in x:
-                    pass  # TODO: find out how to retrieve previous sets' intensity
-        elif len(self.intensity_indices) == 1:
-            string = self.stripped_data[self.intensity_indices[0]]
+                    self.p1rm = self._get_previous_protocol_p1rm()  # gets previous protocols p1rm
+                else:
+                    continue
+        elif len(self._intensity_indices) == 1:
+            string = self.stripped_data[self._intensity_indices[0]]
             if '@' in string:
                 self.rpe = int(string.replace('@', ''))
             elif '%' in string:
                 self.p1rm = (float(string.replace('%', ''))) / 100
-        elif len(self.intensity_indices) == 2:
-            intensity_list = [self.stripped_data[self.intensity_indices[0]], self.stripped_data[self.intensity_indices[
-                1]]]
+        elif len(self._intensity_indices) == 2:
+            intensity_list = [self.stripped_data[self._intensity_indices[0]], self.stripped_data[
+                self._intensity_indices[1]]]
             for x in intensity_list:
                 if '@' in x:
                     self.rpe = average([x.replace('@', '') for x in intensity_list])
@@ -321,10 +326,10 @@ class Protocol(TrueCoachReader):
                 elif '%' in x:
                     self.p1rm = (average([x.replace('%', '') for x in intensity_list])) / 100
                     break
-        elif len(self.intensity_indices) > 2:
+        elif len(self._intensity_indices) > 2:
             raise TypeError('There cannot be more than two RPEs or %1RM targets per set.')
 
-    def rpe_p1rm_brzycki_convert(self):
+    def _rpe_p1rm_brzycki_convert(self):
         """ Find missing p1rm or rpe data and calculate it based off of the supplied parameter"""
         if self.p1rm is None and self.rpe is not None and self.reps is not None:
             adjusted_reps = self.reps + (10 - self.rpe)  # adds reps from failure to actual reps to get total reps
@@ -332,8 +337,17 @@ class Protocol(TrueCoachReader):
         elif self.rpe is None and self.p1rm is not None and self.reps is not None:
             self.rpe = round(((36 * self.p1rm) + self.reps - 27), 2)
 
+    def _get_previous_protocol_p1rm(self):
+        """ Get the p1rm value of the previous protocol object"""
+        l_exer = self._get_parent(Exercise)
+        for l_protocol in l_exer:
+            if l_protocol.protocol_index == self.protocol_index - 1:
+                return l_protocol.p1rm
+
     def __repr__(self):
         return 'Set(\'{}\')'.format(self.raw_content)
 
     def __str__(self):
         return self.raw_content
+
+
