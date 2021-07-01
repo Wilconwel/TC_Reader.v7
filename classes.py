@@ -32,7 +32,7 @@ class WorkoutLog(TrueCoachReader):
         self.parse()
 
     def parse(self):
-        """ Rip through the text file, find workouts and athlete name"""
+        """ Rip through the text file, find workouts, start and end date, and athlete name"""
         with open(self.file_name, 'r') as f:
             self.raw_content = f.readlines()
 
@@ -89,34 +89,33 @@ class WorkoutLog(TrueCoachReader):
             return self.workouts.get(key)
 
     def get_parameter_by_exercise(self, exercise, parameter):  # TODO: find way to display all exercises when looking at this funct 
-        """Finds the data for the given parameter for the every instance of the given exercise, returns a list.
+        """Find the data for the given parameter for the every instance of the given exercise, return a list.
 
         Positional arguments:
-        1 -- the exercise to be searched inputted as a string
-        2 -- the data to be returned inputted as a string (must be 'sets', 'reps', 'p1rm', 'rpe')
+        1 -- the exercise to be searched, inputted as a string
+        2 -- the data to be returned, inputted as a string (must be 'sets', 'reps', 'p1rm', 'rpe')
         """
         ret_values = []
         for l_workouts in self.workouts.values():
             for l_exer in l_workouts:
                 if l_exer.name == exercise:
                         for l_protocol in l_exer.protocols:
-                            ret_values.append(l_protocol.__dir__[parameter]
+                            ret_values.append(l_protocol.__dir__[parameter])
         return ret_values
 
     def get_parameter_by_exercise_category(self, exercise_category, parameter):  # TODO: find way to display all exercises when looking at this funct
-        """Finds the data for the given parameter for all exercises instances in the given exercise category,
-        returns a list.
+        """Find the data for the given parameter for all exercise instances in the given exercise category, return a list.
 
         Positional arguments:
-        1 -- the exercise category to be searched inputted as a string
-        2 -- the data to be returned inputted as a string (must be 'sets', 'reps', 'p1rm', 'rpe')
+        1 -- the exercise category to be searched, inputted as a string
+        2 -- the data to be returned, inputted as a string (must be 'sets', 'reps', 'p1rm', 'rpe')
         """
         ret_values = []
         for l_workouts in self.workouts.values():
             for l_exer in l_workouts:
                 if l_exer.category == exercise_category:
                         for l_protocol in l_exer.protocols:
-                            ret_values.append(l_protocol.__dir__[parameter]
+                            ret_values.append(l_protocol.__dir__[parameter])
         return ret_values
 
 
@@ -134,7 +133,8 @@ class Workout(TrueCoachReader):
         self.microcycle = None
         self.day = None
 
-        if re.search('[0-9]\.[0-9]\.', self.title):
+        # if regex match, update mesocycle, microcycle, and day data
+        if re.search('[0-9]\.[0-9]\.', self.title):  # TODO: write better regex
             self.mesocycle, self.microcycle, self.day = (int(self.title.split('.')[0]), int(self.title.split('.')[1]),
                                                          self.title.split('.')[2])
 
@@ -142,7 +142,6 @@ class Workout(TrueCoachReader):
 
     def parse(self):
         """ Rip through the workout, find exercises, date, and status"""
-
         exercise_start_indices = []
         for index, line in enumerate(self.raw_content):
             if any(day in line for day in c.DOTW) and any(month in line for month in c.MONTHS):
@@ -166,6 +165,7 @@ class Workout(TrueCoachReader):
         for lines in exercises_lines:
             self.exercises.append(Exercise(self, lines))
 
+        # if exercise contains sets, the workout is an actual workout, if not, it's probably a form or questionnaire
         if any(c.RELEVANT_DATA_IDENTIFIER in string for string in self.raw_content) is True:
             self.type = 'Workout'
         else:
@@ -186,6 +186,7 @@ class Workout(TrueCoachReader):
 
 
 class Exercise(TrueCoachReader):
+
     def __init__(self, parent, raw_content):
         super().__init__(parent)
         self.raw_content = raw_content
@@ -200,9 +201,9 @@ class Exercise(TrueCoachReader):
 
     def parse(self):
         """ Rip through the exercise data, find the raw data, name, and relevant set data"""
-
         for index, line in enumerate(self.raw_content):
             if index == 0:
+                pass  # TODO: potentially parse category and classification here
             elif line[0].isupper() and ': ' in line:  # TODO: add regex for this
                 self.name = line.split(': ')[0].split(') ')[1].strip()
             elif line.startswith(c.RELEVANT_DATA_IDENTIFIER):
@@ -217,18 +218,20 @@ class Exercise(TrueCoachReader):
             else:
                 continue
 
+        # if there are no sets than this 'exercise' is something else
         if not self.protocols:
             self.type = 'Other'
         else:
             self.type = 'Exercise'
 
-        if self.type == 'Exercise':  # TODO: ask Justin if this is slow as shit
+        if self.type == 'Exercise':  # TODO: ask Justin if this is slow as shit also needs to be finished
             for char in self.raw_content[0]:
                 try:
                     self.category = ec.exercise_categories.get(char)
                     if self.category is None:
                         continue
                     if self.category is not None:
+                        print(self.category)
                         break
                 except KeyError:
                     continue
@@ -245,9 +248,6 @@ class Exercise(TrueCoachReader):
 
     def __getitem__(self, set_number):
         return self.protocols[set_number]
-
-    def total_sets(self):
-        return sum(self._get_parent().get_sets_by_exercise(self.name))
 
 
 class Protocol(TrueCoachReader):
@@ -270,7 +270,6 @@ class Protocol(TrueCoachReader):
 
     def parse(self):
         """ Rip through the set data, find the raw data, # sets, # reps, RPE, and % of 1RM"""
-
         def average(list_of_nums: list):
             total_num = len(list_of_nums)
             total = 0
@@ -325,6 +324,7 @@ class Protocol(TrueCoachReader):
             raise TypeError('There cannot be more than two RPEs or %1RM targets per set.')
 
     def rpe_p1rm_brzycki_convert(self):
+        """ Find missing p1rm or rpe data and calculate it based off of the supplied parameter"""
         if self.p1rm is None and self.rpe is not None and self.reps is not None:
             adjusted_reps = self.reps + (10 - self.rpe)  # adds reps from failure to actual reps to get total reps
             self.p1rm = round((1 / (36 / (37 - adjusted_reps))), 2)
