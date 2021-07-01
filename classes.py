@@ -224,13 +224,16 @@ class Exercise(TrueCoachReader):
         else:
             self.type = 'Exercise'
 
-        if self.type == 'Exercise':  # TODO: ask Justin if this is slow as shit also needs to be finished
+        # if this is an exercise, try to find category and classification from the first line of the txt
+        if self.type == 'Exercise':  # TODO: ask Justin if this is slow as shit
             for char in self.raw_content[0]:
                 try:
                     self.category = ec.exercise_categories.get(char)
                     if self.category is None:
                         continue
                     elif self.category is not None:
+                        self.classification = ec.exercise_classifications.get(char)  # once category is found check
+                        # its classification
                         break
                 except KeyError:
                     continue

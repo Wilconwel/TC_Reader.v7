@@ -8,7 +8,7 @@ Title: 21.1.Day_1
 Status: completed
 
 
-A) Deadlift w/ Belt: 🟦 | WARMUP:
+A) Deadlift w/ Belt: 🔵 | WARMUP:
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
 2 sets w/ empty bar
 4-8 x 1 @1 to @5
@@ -33,7 +33,7 @@ A) Deadlift w/ Belt: 🟦 | WARMUP:
 310x1 @5
 275x4 @4.5
 275x4 @4
-B) 1ct Pause Bench Press: 🟩 | WARMUP:
+B) 1ct Pause Bench Press: 🟢 | WARMUP:
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
 2 sets w/ empty bar
 3-6 x 1 @1 to @5
@@ -207,7 +207,7 @@ Title: 21.1.Day_3
 Status: completed
 
 
-A) Low Bar Squat w/ Belt: 🟥 | WARMUP:
+A) Low Bar Squat w/ Belt: 🔴 | WARMUP:
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
 2 sets w/ empty bar
 4-8 x 1 @1 to @5
