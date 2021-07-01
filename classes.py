@@ -204,7 +204,6 @@ class Exercise(TrueCoachReader):
         for index, line in enumerate(self.raw_content):
             if line[0].isupper() and ': ' in line and ')' in line:  # TODO: add regex for this
                 self.name = line.split(': ')[0].split(') ')[1].strip()
-                print(self.name)
             elif line.startswith(c.RELEVANT_DATA_IDENTIFIER):
                 self.protocols.append(Protocol(self, line.split('❍ ')[1]))
             elif line.startswith('   '):
