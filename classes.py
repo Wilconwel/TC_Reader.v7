@@ -86,9 +86,9 @@ class WorkoutLog(TrueCoachReader):
             return workouts
         else:
             key = key_list[k]
-            return self.workouts.get(key)
+            return self.workouts.get(key)  # TODO: find way to slice workout objects
 
-    def get_parameter_by_exercise(self, exercise, parameter):  # TODO: find way to display all exercises when looking at this funct 
+    def get_parameter_by_exercise(self, exercise, parameter):
         """Find the data for the given parameter for the every instance of the given exercise, return a list.
 
         Positional arguments:
@@ -230,8 +230,7 @@ class Exercise(TrueCoachReader):
                     self.category = ec.exercise_categories.get(char)
                     if self.category is None:
                         continue
-                    if self.category is not None:
-                        print(self.category)
+                    elif self.category is not None:
                         break
                 except KeyError:
                     continue
