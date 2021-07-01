@@ -103,7 +103,7 @@ class WorkoutLog(TrueCoachReader):
                             ret_values.append(l_protocol.__dir__[parameter])
         return ret_values
 
-    def get_parameter_by_exercise_category(self, exercise_category, parameter):  # TODO: find way to display all exercises when looking at this funct
+    def get_parameter_by_exercise_category(self, exercise_category, parameter):
         """Find the data for the given parameter for all exercise instances in the given exercise category, return a list.
 
         Positional arguments:
@@ -114,8 +114,8 @@ class WorkoutLog(TrueCoachReader):
         for l_workouts in self.workouts.values():
             for l_exer in l_workouts:
                 if l_exer.category == exercise_category:
-                        for l_protocol in l_exer.protocols:
-                            ret_values.append(l_protocol.__dir__[parameter])
+                    for l_protocol in l_exer.protocols:
+                        ret_values.append(l_protocol.__dir__[parameter])
         return ret_values
 
 
@@ -202,10 +202,9 @@ class Exercise(TrueCoachReader):
     def parse(self):
         """ Rip through the exercise data, find the raw data, name, and relevant set data"""
         for index, line in enumerate(self.raw_content):
-            if index == 0:
-                pass  # TODO: potentially parse category and classification here
-            elif line[0].isupper() and ': ' in line:  # TODO: add regex for this
+            if line[0].isupper() and ': ' in line and ')' in line:  # TODO: add regex for this
                 self.name = line.split(': ')[0].split(') ')[1].strip()
+                print(self.name)
             elif line.startswith(c.RELEVANT_DATA_IDENTIFIER):
                 self.protocols.append(Protocol(self, line.split('❍ ')[1]))
             elif line.startswith('   '):
