@@ -133,10 +133,10 @@ class Workout(TrueCoachReader):
         self.microcycle = None
         self.day = None
 
-        # if regex match, update mesocycle, microcycle, and day data
+        # if regex match, update mesocycle, microcycle, and day
         if re.search('[0-9]\.[0-9]\.', self.title):  # TODO: write better regex
-            self.mesocycle, self.microcycle, self.day = (int(self.title.split('.')[0]), int(self.title.split('.')[1]),
-                                                         self.title.split('.')[2])
+            self.mesocycle, self.microcycle, self.day = (int(self.title.split('.')[0]), int(self.title.split('.')[
+                                                                                                1]), self.title.split('.')[2])
 
         self.parse()
 
