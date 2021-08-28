@@ -88,6 +88,20 @@ class WorkoutLog(TrueCoachReader):
             key = key_list[k]
             return self.workouts.get(key)  # TODO: find way to slice workout objects
 
+    def get_sets_by_exercise(self, exercise):
+        """Find the set data for every instance of the given exercise, return a list
+
+               Positional arguments:
+               1 -- the exercise to be searched, inputted as a string
+               """
+        ret_values = []
+        for l_workouts in self.workouts.values():
+            for l_exer in l_workouts:
+                if l_exer.name == exercise:
+                    for l_protocol in l_exer.protocols:
+                        ret_values.append(l_protocol.sets)
+        return ret_values
+
     def get_parameter_by_exercise(self, exercise, parameter):
         """Find the data for the given parameter for the every instance of the given exercise, return a list
 
