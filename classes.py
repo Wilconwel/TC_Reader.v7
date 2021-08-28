@@ -100,7 +100,7 @@ class WorkoutLog(TrueCoachReader):
             for l_exer in l_workouts:
                 if l_exer.name == exercise:
                         for l_protocol in l_exer.protocols:
-                            ret_values.append(l_protocol.__dir__[parameter])
+                            ret_values.append(getattr(l_protocol, parameter))
         return ret_values
 
     def get_parameter_by_exercise_category(self, exercise_category, parameter):
@@ -115,8 +115,7 @@ class WorkoutLog(TrueCoachReader):
             for l_exer in l_workouts:
                 if l_exer.category == exercise_category:
                     for l_protocol in l_exer.protocols:
-                        ret_values.append(l_protocol.__dir__[parameter])  # TODO: this is broken but directly
-                        # appending l_protocol.'<any parameter>' works
+                        ret_values.append(getattr(l_protocol, parameter))
         return ret_values
 
 
