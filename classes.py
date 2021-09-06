@@ -283,7 +283,9 @@ class Protocol(TrueCoachReader):
         self._intensity_indices = []
 
         self.parse()
+        self._duplicate_protocol_objects()
         self._rpe_p1rm_brzycki_convert()
+
 
     def parse(self):
         """ Rip through the set data, find the raw data, # sets, # reps, RPE, and % of 1RM"""
@@ -343,7 +345,7 @@ class Protocol(TrueCoachReader):
             raise TypeError('There cannot be more than two RPEs or %1RM targets per set.')
 
     def _rpe_p1rm_brzycki_convert(self):
-        """ Find missing p1rm or rpe data and calculate it based off of the supplied parameter"""
+        """ Determine which data is missing (p1rm or rpe data) and calculate it based off of the present data"""
         if self.p1rm is None and self.rpe is not None and self.reps is not None:
             adjusted_reps = self.reps + (10 - self.rpe)  # adds reps from failure to actual reps to get total reps
             self.p1rm = round((1 / (36 / (37 - adjusted_reps))), 2)
@@ -357,10 +359,24 @@ class Protocol(TrueCoachReader):
             if l_protocol.protocol_index == self.protocol_index - 1:
                 return l_protocol.p1rm
 
+    def _duplicate_protocol_objects(self):
+        """ Create duplicate protocol objects if the set count is greater than 1"""
+        counter = 0
+        l_exer = self._get_parent(Exercise)
+        if self.sets > 1:
+            self.sets = 1
+            new_raw_content = self.raw_content.pop(0).insert(0, )
+            l_exer.protocols.append(Protocol(l_exer, self.protocol_index + 1, ))
+
+
+
     def __repr__(self):
-        return 'Set(\'{}\')'.format(self.raw_content)
+        return 'Protocol(\'{}\', \'{}\')'.format(self.protocol_index, self.raw_content)
 
     def __str__(self):
         return self.raw_content
+
+    def __len__(self):
+        return self.sets
 
 
