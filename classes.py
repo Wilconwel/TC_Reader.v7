@@ -283,7 +283,9 @@ class Protocol(TrueCoachReader):
         self._intensity_indices = []
 
         self.parse()
-        self._duplicate_protocol_objects()
+        l_exer = self._get_parent(Exercise)
+        l_exer.protocols.append(self._make_protocol_object((self.protocol_index + 1),
+                                        str(self._reduce_protocol_raw_content_set_num_by_1())))
         self._rpe_p1rm_brzycki_convert()
 
 
@@ -359,16 +361,19 @@ class Protocol(TrueCoachReader):
             if l_protocol.protocol_index == self.protocol_index - 1:
                 return l_protocol.p1rm
 
-    def _duplicate_protocol_objects(self):
-        """ Create duplicate protocol objects if the set count is greater than 1"""
-        counter = 0
-        l_exer = self._get_parent(Exercise)
+    def _reduce_protocol_raw_content_set_num_by_1(self):
+        """ Create a duplicate raw_content string with 1 less set if the set count is greater than 1 and make the
+        sets equal to 1"""
         if self.sets > 1:
+            set_number_regex = re.compile('^[1-9] ')
+            matched_set_number = set_number_regex.search(self.raw_content)
+            new_raw_content = self.raw_content.replace(matched_set_number.group(), str(self.sets - 1) + ' ', 1)
             self.sets = 1
-            new_raw_content = self.raw_content.pop(0).insert(0, )
-            l_exer.protocols.append(Protocol(l_exer, self.protocol_index + 1, ))
+            return new_raw_content
 
-
+    def _make_protocol_object(self, protocol_index, raw_content):
+        protocol = Protocol(self, protocol_index, raw_content)
+        return protocol
 
     def __repr__(self):
         return 'Protocol(\'{}\', \'{}\')'.format(self.protocol_index, self.raw_content)
