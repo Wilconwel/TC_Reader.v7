@@ -17,6 +17,10 @@ class TrueCoachReader:
         else:
             return self._parent._get_parent(parent_type)
 
+    def get_workout_list(self):
+        """ Returns a list of workout names as strings"""
+        return list(self._get_parent(WorkoutLog).workouts.keys())
+
 
 class WorkoutLog(TrueCoachReader):
 
@@ -274,18 +278,15 @@ class Protocol(TrueCoachReader):
         self.raw_content = raw_content
         self.stripped_data = None
         self.sets = None
-        self.reps = None
-        self.min_reps = None
-        self.max_reps = None
-        self.rpe = None
-        self.p1rm = None
+        self.reps = []
+        self.min_reps = []
+        self.max_reps = []
+        self.rpe = []
+        self.p1rm = []
         self.x_index = None
         self._intensity_indices = []
 
         self.parse()
-        l_exer = self._get_parent(Exercise)
-        l_exer.protocols.append(self._make_protocol_object((self.protocol_index + 1),
-                                        str(self._reduce_protocol_raw_content_set_num_by_1())))
         self._rpe_p1rm_brzycki_convert()
 
 
@@ -312,68 +313,82 @@ class Protocol(TrueCoachReader):
             if string.isnumeric() and index < self.x_index:
                 self.sets = int(string)
             elif string.isnumeric() and index > self.x_index:
-                self.reps = int(string)
-                self.min_reps = int(string)
-                self.max_reps = int(string)
-            elif '-' in string and self.x_index < index < \
-                    self._intensity_indices[0]:
-                self.reps = float(average([rep for rep in string.split('-')]))
-                self.min_reps = int(string.split('-')[0])
-                self.max_reps = int(string.split('-')[1])
+                counter = 0
+                while counter < self.sets:
+                    self.reps.append(int(string))
+                    self.min_reps.append(int(string))
+                    self.max_reps.append(int(string))
+                    counter += 1
+            elif '-' in string and self.x_index < index < self._intensity_indices[0]:
+                counter = 0
+                while counter < self.sets:
+                    self.reps.append(float(average([rep for rep in string.split('-')])))
+                    self.min_reps.append(int(string.split('-')[0]))
+                    self.max_reps.append(int(string.split('-')[1]))
+                    counter += 1
 
         if len(self._intensity_indices) == 0:
             for x in self.stripped_data:
                 if ('^' or '^same' or 'weight^') in x:
-                    self.p1rm = self._get_previous_protocol_p1rm()  # gets previous protocols p1rm
+                    counter = 0
+                    while counter < self.sets:
+                        self.p1rm.append(self._get_previous_protocol_p1rm())  # gets previous protocols p1rm
+                        counter += 1
                 else:
                     continue
         elif len(self._intensity_indices) == 1:
             string = self.stripped_data[self._intensity_indices[0]]
             if '@' in string:
-                self.rpe = int(string.replace('@', ''))
+                counter = 0
+                while counter < self.sets:
+                    self.rpe.append(int(string.replace('@', '')))
+                    counter += 1
             elif '%' in string:
-                self.p1rm = (float(string.replace('%', ''))) / 100
+                counter = 0
+                while counter < self.sets:
+                    self.p1rm.append((float(string.replace('%', ''))) / 100)
+                    counter += 1
         elif len(self._intensity_indices) == 2:
             intensity_list = [self.stripped_data[self._intensity_indices[0]], self.stripped_data[
                 self._intensity_indices[1]]]
             for x in intensity_list:
                 if '@' in x:
-                    self.rpe = average([x.replace('@', '') for x in intensity_list])
+                    counter = 0
+                    while counter < self.sets:
+                        self.rpe.append(average([x.replace('@', '') for x in intensity_list]))
+                        counter += 1
                     break
                 elif '%' in x:
-                    self.p1rm = (average([x.replace('%', '') for x in intensity_list])) / 100
+                    counter = 0
+                    while counter < self.sets:
+                        self.p1rm.append((average([x.replace('%', '') for x in intensity_list])) / 100)
+                        counter += 1
                     break
         elif len(self._intensity_indices) > 2:
             raise TypeError('There cannot be more than two RPEs or %1RM targets per set.')
 
     def _rpe_p1rm_brzycki_convert(self):
         """ Determine which data is missing (p1rm or rpe data) and calculate it based off of the present data"""
-        if self.p1rm is None and self.rpe is not None and self.reps is not None:
-            adjusted_reps = self.reps + (10 - self.rpe)  # adds reps from failure to actual reps to get total reps
-            self.p1rm = round((1 / (36 / (37 - adjusted_reps))), 2)
-        elif self.rpe is None and self.p1rm is not None and self.reps is not None:
-            self.rpe = round(((36 * self.p1rm) + self.reps - 27), 2)
+        if self.p1rm == [] and self.rpe != [] and self.reps != []:
+            adjusted_reps = self.reps[0] + (10 - self.rpe[0])  # adds reps from failure to actual reps to get total reps
+            counter = 0
+            while counter < self.sets:
+                self.p1rm.append(round((1 / (36 / (37 - adjusted_reps))), 2))
+                counter += 1
+        elif self.rpe == [] and self.p1rm != [] and self.reps != []:
+            calculated_rpe = round(((36 * self.p1rm[0]) + self.reps[0] - 27), 2)
+            counter = 0
+            while counter < self.sets:
+                self.rpe.append(calculated_rpe)
+                counter += 1
+
 
     def _get_previous_protocol_p1rm(self):
         """ Get the p1rm value of the previous protocol object"""
         l_exer = self._get_parent(Exercise)
         for l_protocol in l_exer:
             if l_protocol.protocol_index == self.protocol_index - 1:
-                return l_protocol.p1rm
-
-    def _reduce_protocol_raw_content_set_num_by_1(self):
-        """ Create a duplicate raw_content string with 1 less set if the set count is greater than 1 and make the
-        sets equal to 1"""
-        if self.sets > 1:
-            set_number_regex = re.compile('^[1-9] ')
-            matched_set_number = set_number_regex.search(self.raw_content)
-            new_raw_content = self.raw_content.replace(matched_set_number.group(), str(self.sets - 1) + ' ', 1)
-            self.sets = 1
-            return new_raw_content
-
-    def _make_protocol_object(self, protocol_index, raw_content):
-        protocol = Protocol(self, protocol_index, raw_content)
-        return protocol
+                return l_protocol.p1rm[0]
 
     def __repr__(self):
         return 'Protocol(\'{}\', \'{}\')'.format(self.protocol_index, self.raw_content)
