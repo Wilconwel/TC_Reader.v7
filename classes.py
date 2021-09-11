@@ -7,7 +7,141 @@ import constants as c
 import datetime
 import re
 
+class Deque:
+
+    def __init__(self, nodes=None):
+        self.head = None
+        self.tail = None
+        if nodes is not None:
+            node = Node(data=nodes.pop(0))
+            self.head = node
+            for elem in nodes:
+                node.next = Node(data=elem)
+                node = node.next
+
+    def add_first(self, new_node):
+        """ Insert a new node to the beginning of the deque"""
+
+        new_node.next = self.head   # update the new_node's next reference to be the current head
+        if self.head is None:   # if the list is empty make the new_node the head and tail
+            self.head = new_node
+            self.tail = new_node
+        else:   # if the list is not empty then make the old head's previous reference the new_node and then update
+            # the head to the new_node
+            self.head.previous = new_node
+            self.head = new_node
+
+    def add_last(self, new_node):
+        """ Insert a new node to the end of the deque"""
+
+        new_node.previous = self.tail
+        if self.tail is None:   # if the list is empty make both the head and tail the new node
+            self.head = new_node
+            self.tail = new_node
+        else:   # if the list is not empty then make the tail reference the new tail and set the new node as the
+            # new tail
+            self.tail.next = new_node
+            self.tail = new_node
+
+    def insert_before(self, target_node, new_node):
+        """ Insert a new node before the target node.
+
+        Positional arguments:
+        1) the node that comes after the new node
+        2) the new node to be inserted
+        """
+
+        if target_node is None:
+            print('The specified target node, \'{}\' does not exist.'.format(target_node))
+        else:
+            new_node.previous = target_node.previous
+            target_node.previous = new_node
+            new_node.next = target_node
+            if new_node.previous is not None:
+                new_node.previous.next = new_node
+            if target_node == self.head:
+                self.head == new_node
+
+    def insert_after(self, target_node, new_node):
+        """ Insert a new node after the target node.
+
+        Positional arguments:
+        1) the node that comes before the new node
+        2) the new node to be inserted
+        """
+
+        if target_node is None:
+            print('The specified target node, \'{}\' does not exist.'.format(target_node))
+        else:
+            target_node.next = new_node
+            new_node.next = target_node.next
+            new_node.previous = target_node
+            if new_node.next is not None:
+                new_node.next.previous = new_node
+            if target_node is self.tail:
+                self.tail = new_node
+
+    def return_first(self):
+        if self.head == None:
+            Exception('Deque is empty.')
+        else:
+            return self.head.data
+
+    def return_last(self):
+        if self.tail == None:
+            Exception('Deque is empty.')
+        else:
+            return self.tail.data
+
+    def __getitem__(self, node_number):
+        if node_number >= 0:
+            node = self.head
+            counter = 0
+            while counter < node_number:
+                node = node.next
+                counter += 1
+            return node
+        else:
+            print('negative!')
+            node = self.tail
+            counter = 0
+            while counter > node_number:
+                node = node.previous
+                counter -= 1
+            return node
+
+    def __iter__(self):
+        node = self.head
+        while node is not None:
+            yield node
+            node = node.next
+
+    def __str__(self):
+        node = self.head
+        nodes = []
+        while node is not None:
+            nodes.append(node.data)
+            node = node.next
+        nodes.append("None")
+        return " <-> ".join(nodes)
+
+
+class Node:
+
+    def __init__(self, data):
+        self.data = data
+        self.next = None
+        self.previous = None
+
+    def print_relationship(self):
+        nodes = [self.previous, self, self.next]
+        print(' <-> '.join(nodes))
+
+    def __str__(self):
+        return self.data
+
 class TrueCoachReader:
+
     def __init__(self, parent):
         self._parent = parent
 
@@ -17,8 +151,15 @@ class TrueCoachReader:
         else:
             return self._parent._get_parent(parent_type)
 
+    def _get_children(self, children_type=None):
+        if isinstance(self, children_type if children_type is not None else WorkoutLog):
+            return self
+        else:
+            return self._get_children(children_type)    # TODO: make this function work
+
     def get_workout_list(self):
         """ Returns a list of workout names as strings"""
+
         return list(self._get_parent(WorkoutLog).workouts.keys())
 
 
@@ -95,9 +236,10 @@ class WorkoutLog(TrueCoachReader):
     def get_sets_by_exercise(self, exercise):
         """Find the set data for every instance of the given exercise, return a list
 
-               Positional arguments:
-               1 -- the exercise to be searched, inputted as a string
-               """
+        Positional arguments:
+        1) the exercise to be searched, inputted as a string
+        """
+
         ret_values = []
         for l_workouts in self.workouts.values():
             for l_exer in l_workouts:
@@ -110,24 +252,26 @@ class WorkoutLog(TrueCoachReader):
         """Find the data for the given parameter for the every instance of the given exercise, return a list
 
         Positional arguments:
-        1 -- the exercise to be searched, inputted as a string
-        2 -- the data to be returned, inputted as a string (must be 'sets', 'reps', 'p1rm', 'rpe')
+        1) the exercise to be searched, inputted as a string
+        2) the data to be returned, inputted as a string (must be 'sets', 'reps', 'p1rm', 'rpe')
         """
+
         ret_values = []
         for l_workouts in self.workouts.values():
             for l_exer in l_workouts:
                 if l_exer.name == exercise:
-                        for l_protocol in l_exer.protocols:
-                            ret_values.append(getattr(l_protocol, parameter))
+                    for l_protocol in l_exer.protocols:
+                        ret_values.append(getattr(l_protocol, parameter))
         return ret_values
 
     def get_parameter_by_exercise_category(self, exercise_category, parameter):
         """Find the data for the given parameter for all exercise instances in the given exercise category, return a list
 
         Positional arguments:
-        1 -- the exercise category to be searched, inputted as a string
-        2 -- the data to be returned, inputted as a string (must be 'sets', 'reps', 'p1rm', 'rpe')
+        1) the exercise category to be searched, inputted as a string
+        2) the data to be returned, inputted as a string (must be 'sets', 'reps', 'p1rm', 'rpe')
         """
+
         ret_values = []
         for l_workouts in self.workouts.values():
             for l_exer in l_workouts:
@@ -154,7 +298,8 @@ class Workout(TrueCoachReader):
         # if regex match, update mesocycle, microcycle, and day
         if re.search('[0-9]\.[0-9]\.', self.title):  # TODO: write better regex
             self.mesocycle, self.microcycle, self.day = (int(self.title.split('.')[0]), int(self.title.split('.')[
-                                                                                                1]), self.title.split('.')[2])
+                                                                                                1]),
+                                                         self.title.split('.')[2])
 
         self.parse()
 
@@ -289,9 +434,9 @@ class Protocol(TrueCoachReader):
         self.parse()
         self._rpe_p1rm_brzycki_convert()
 
-
     def parse(self):
         """ Rip through the set data, find the raw data, # sets, # reps, RPE, and % of 1RM"""
+
         def average(list_of_nums: list):
             total_num = len(list_of_nums)
             total = 0
@@ -369,6 +514,7 @@ class Protocol(TrueCoachReader):
 
     def _rpe_p1rm_brzycki_convert(self):
         """ Determine which data is missing (p1rm or rpe data) and calculate it based off of the present data"""
+
         if self.p1rm == [] and self.rpe != [] and self.reps != []:
             adjusted_reps = self.reps[0] + (10 - self.rpe[0])  # adds reps from failure to actual reps to get total reps
             counter = 0
@@ -382,9 +528,9 @@ class Protocol(TrueCoachReader):
                 self.rpe.append(calculated_rpe)
                 counter += 1
 
-
     def _get_previous_protocol_p1rm(self):
         """ Get the p1rm value of the previous protocol object"""
+
         l_exer = self._get_parent(Exercise)
         for l_protocol in l_exer:
             if l_protocol.protocol_index == self.protocol_index - 1:
@@ -398,5 +544,3 @@ class Protocol(TrueCoachReader):
 
     def __len__(self):
         return self.sets
-
-
