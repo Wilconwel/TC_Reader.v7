@@ -7,6 +7,7 @@ import constants as c
 import datetime
 import re
 
+
 class Deque:
 
     def __init__(self, nodes=None):
@@ -129,6 +130,7 @@ class Node:
     def __str__(self):
         return self.data
 
+
 class TrueCoachReader:
 
     def __init__(self, parent):
@@ -152,7 +154,7 @@ class TrueCoachReader:
         return list(self._get_parent(WorkoutLog).workouts.keys())
 
 
-class WorkoutLog(TrueCoachReader, Node):
+class WorkoutLog(TrueCoachReader):
 
     def __init__(self, filename):
         super().__init__(self)
@@ -270,13 +272,13 @@ class WorkoutLog(TrueCoachReader, Node):
         return ret_values
 
 
-class Workout(TrueCoachReader):
+class Workout(TrueCoachReader, Node):
 
     def __init__(self, parent, title, raw_content):
         super().__init__(parent)
         self.title = title
         self.raw_content = raw_content
-        self.exercises = []
+        self.exercises = Deque()
         self.date = None
         self.status = None
         self.type = None
@@ -337,7 +339,7 @@ class Workout(TrueCoachReader):
         return self.exercises[exercise_number]
 
 
-class Exercise(TrueCoachReader):
+class Exercise(TrueCoachReader, Node):
 
     def __init__(self, parent, raw_content):
         super().__init__(parent)
@@ -404,7 +406,7 @@ class Exercise(TrueCoachReader):
         return self.protocols[set_number]
 
 
-class Protocol(TrueCoachReader):
+class Protocol(TrueCoachReader, Node):
 
     def __init__(self, parent, protocol_index, raw_content):
         super().__init__(parent)
