@@ -13,13 +13,11 @@ class Deque:
         self.head = None
         self.tail = None
         if nodes is not None:
-            node = Node(data=nodes.pop(0))
-            self.head = node
             for elem in nodes:
-                node.next = Node(data=elem)
-                node = node.next
+                self.append(Node(elem))
 
-    def add_first(self, new_node):
+
+    def prepend(self, new_node):
         """ Insert a new node to the beginning of the deque"""
 
         new_node.next = self.head   # update the new_node's next reference to be the current head
@@ -31,7 +29,7 @@ class Deque:
             self.head.previous = new_node
             self.head = new_node
 
-    def add_last(self, new_node):
+    def append(self, new_node):
         """ Insert a new node to the end of the deque"""
 
         new_node.previous = self.tail
@@ -94,21 +92,8 @@ class Deque:
             return self.tail.data
 
     def __getitem__(self, node_number):
-        if node_number >= 0:
-            node = self.head
-            counter = 0
-            while counter < node_number:
-                node = node.next
-                counter += 1
-            return node
-        else:
-            print('negative!')
-            node = self.tail
-            counter = 0
-            while counter > node_number:
-                node = node.previous
-                counter -= 1
-            return node
+        ret_nodes = [n for n in self]
+        return ret_nodes[node_number]
 
     def __iter__(self):
         node = self.head
@@ -122,7 +107,6 @@ class Deque:
         while node is not None:
             nodes.append(node.data)
             node = node.next
-        nodes.append("None")
         return " <-> ".join(nodes)
 
 
@@ -133,9 +117,14 @@ class Node:
         self.next = None
         self.previous = None
 
-    def print_relationship(self):
-        nodes = [self.previous, self, self.next]
-        print(' <-> '.join(nodes))
+    def print_siblings(self):
+        if self.previous is None:
+            nodes = [self.data, self.next.data]
+        elif self.next is None:
+            nodes = [self.previous.data, self.data]
+        else:
+            nodes = [self.previous.data, self.data, self.next.data]
+        print(nodes)
 
     def __str__(self):
         return self.data
@@ -163,7 +152,7 @@ class TrueCoachReader:
         return list(self._get_parent(WorkoutLog).workouts.keys())
 
 
-class WorkoutLog(TrueCoachReader):
+class WorkoutLog(TrueCoachReader, Node):
 
     def __init__(self, filename):
         super().__init__(self)
@@ -358,7 +347,7 @@ class Exercise(TrueCoachReader):
         self.category = None
         self.classification = None
         self.results = None
-        self.protocols = []
+        self.protocols = Deque()
 
         self.parse()
 
