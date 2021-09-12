@@ -8,7 +8,7 @@ import datetime
 import re
 
 
-class Deque:
+class DoublyLinkedList:
 
     def __init__(self, nodes=None):
         self.head = None
@@ -17,6 +17,29 @@ class Deque:
             for elem in nodes:
                 self.append(Node(elem))
 
+    def remove_head(self):
+        if self.head is None:   # check if the list is empty
+            raise Exception ('Doubly linked list is empty.')
+            return
+        elif self.head.next is None:    # check if the list has 1 element
+            self.head = None
+            self.tail = None
+            return
+        else:
+            self.head.next = self.head
+            self.head.previous = None
+
+    def remove_tail(self):
+        if self.head is None:  # check if the list is empty
+            raise Exception('Doubly linked list is empty.')
+            return
+        elif self.head.next is None:  # check if the list has 1 element
+            self.head = None
+            self.tail = None
+            return
+        else:
+            self.tail.previous = self.tail
+            self.tail.next = None
 
     def prepend(self, new_node):
         """ Insert a new node to the beginning of the deque"""
@@ -32,7 +55,6 @@ class Deque:
 
     def append(self, new_node):
         """ Insert a new node to the end of the deque"""
-
         new_node.previous = self.tail
         if self.tail is None:   # if the list is empty make both the head and tail the new node
             self.head = new_node
@@ -82,15 +104,43 @@ class Deque:
 
     def return_first(self):
         if self.head == None:
-            Exception('Deque is empty.')
+            Exception('DoublyLinkedList is empty.')
         else:
             return self.head.data
 
     def return_last(self):
         if self.tail == None:
-            Exception('Deque is empty.')
+            Exception('DoublyLinkedList is empty.')
         else:
             return self.tail.data
+
+    def remove_by_data(self, x):
+        if self.head is None:   # check if list is empty
+            raise IndexError('Doubly linked list is empty.')
+            return
+        elif self.head.next is None:    # check is list contains 1 item
+            if self.head.data is x:
+                self.remove_head()
+            else:
+                raise ValueError('%s not in list' % x)
+            return
+        elif self.head.data is x:   # check if head is item to be removed
+            self.remove_head()
+            return
+        else:   # if list is not empty, contains just 1 item, or target node is not head:
+            node = self.head
+            while node.next is not None:    # traverse list until target node is found
+                if node.data is x:
+                    break
+                node = node.next
+            if node.next is not None:
+                node.previous.next = node.next
+                node.next.previous = node.previous
+            else:
+                if node.data is x:
+                    node.previous.next = None
+                else:
+                    raise ValueError('%s not in list' % x)
 
     def __getitem__(self, node_number):
         ret_nodes = [n for n in self]
@@ -108,7 +158,7 @@ class Deque:
         while node is not None:
             nodes.append(node.data)
             node = node.next
-        return " <-> ".join(nodes)
+        return " <-> ".join(str(nodes))
 
 
 class Node:
@@ -160,7 +210,7 @@ class WorkoutLog(TrueCoachReader):
         super().__init__(self)
         self.file_name = filename
         self.raw_content = None
-        self.workouts = OrderedDict()
+        self.workouts = DoublyLinkedList()
         self.athlete_name = None
         self.start_date = None
         self.end_date = None
@@ -202,7 +252,7 @@ class WorkoutLog(TrueCoachReader):
             workouts_lines.append(use_iterable_nums_as_index(self.raw_content, tup))
 
         for index, line in enumerate(workouts_lines):
-            self.workouts[workout_names[index]] = Workout(self, workout_names[index], line)
+            self.workouts.append(Workout(self, workout_names[index], line))
 
     def __repr__(self):
         return 'WorkoutLog(\'{}\')'.format(self.file_name)
@@ -272,19 +322,21 @@ class WorkoutLog(TrueCoachReader):
         return ret_values
 
 
-class Workout(TrueCoachReader, Node):
+class Workout(Node, TrueCoachReader):
 
     def __init__(self, parent, title, raw_content):
         super().__init__(parent)
         self.title = title
         self.raw_content = raw_content
-        self.exercises = Deque()
+        self.exercises = DoublyLinkedList()
         self.date = None
         self.status = None
         self.type = None
         self.mesocycle = None
         self.microcycle = None
         self.day = None
+        self.next = None
+        self.previous = None
 
         # if regex match, update mesocycle, microcycle, and day
         if re.search('[0-9]\.[0-9]\.', self.title):  # TODO: write better regex
@@ -339,7 +391,7 @@ class Workout(TrueCoachReader, Node):
         return self.exercises[exercise_number]
 
 
-class Exercise(TrueCoachReader, Node):
+class Exercise(Node, TrueCoachReader):
 
     def __init__(self, parent, raw_content):
         super().__init__(parent)
@@ -349,19 +401,17 @@ class Exercise(TrueCoachReader, Node):
         self.category = None
         self.classification = None
         self.results = None
-        self.protocols = Deque()
+        self.protocols = DoublyLinkedList()
 
         self.parse()
 
     def parse(self):
         """ Rip through the exercise data, find the raw data, name, and relevant set data"""
-        counter = 0  # counter for Protocol index
         for index, line in enumerate(self.raw_content):
             if re.search('^[A-Z][1-9]?\) [^:\n]*:.*', line):
                 self.name = line.split(': ')[0].split(') ')[1].strip()
             elif line.startswith(c.RELEVANT_DATA_IDENTIFIER):
-                self.protocols.append(Protocol(self, counter, line.split('❍ ')[1]))
-                counter += 1
+                self.protocols.append(Protocol(self, line.split('❍ ')[1]))
             elif line.startswith('   '):
                 results_start = index
                 results_end = len(self.raw_content)
@@ -406,11 +456,10 @@ class Exercise(TrueCoachReader, Node):
         return self.protocols[set_number]
 
 
-class Protocol(TrueCoachReader, Node):
+class Protocol(Node, TrueCoachReader):
 
-    def __init__(self, parent, protocol_index, raw_content):
+    def __init__(self, parent, raw_content):
         super().__init__(parent)
-        self.protocol_index = protocol_index  # index of Protocol within Exercise starting at 0
         self.raw_content = raw_content
         self.stripped_data = None
         self.sets = None
@@ -466,10 +515,7 @@ class Protocol(TrueCoachReader, Node):
         if len(self._intensity_indices) == 0:
             for x in self.stripped_data:
                 if ('^' or '^same' or 'weight^') in x:
-                    counter = 0
-                    while counter < self.sets:
-                        self.p1rm.append(self._get_previous_protocol_p1rm())  # gets previous protocols p1rm
-                        counter += 1
+                    pass
                 else:
                     continue
         elif len(self._intensity_indices) == 1:
