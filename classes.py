@@ -16,53 +16,51 @@ class DoublyLinkedList:
         self._nodes_as_dict = {}
         if nodes is not None:
             for elem in nodes:
-                self.append(Node(elem))
+                self.append(Family(elem))
 
     def remove_head(self):
         if self.head is None:   # check if the list is empty
-            raise Exception ('Doubly linked list is empty.')
-            return
-        elif self.head.next is None:    # check if the list has 1 element
+            raise Exception('Doubly linked list is empty.')
+        elif self.head._yibling is None:    # check if the list has 1 element
             self.head = None
             self.tail = None
             return
         else:
-            self.head.next = self.head
-            self.head.previous = None
+            self.head._yibling = self.head
+            self.head._obling = None
 
     def remove_tail(self):
         if self.head is None:  # check if the list is empty
             raise Exception('Doubly linked list is empty.')
-            return
-        elif self.head.next is None:  # check if the list has 1 element
+        elif self.head._yibling is None:  # check if the list has 1 element
             self.head = None
             self.tail = None
             return
         else:
-            self.tail.previous = self.tail
-            self.tail.next = None
+            self.tail._obling = self.tail
+            self.tail._yibling = None
 
     def prepend(self, new_node):
         """ Insert a new node to the beginning of the deque"""
 
-        new_node.next = self.head   # update the new_node's next reference to be the current head
+        new_node._yibling = self.head   # update the new_node's _yibling reference to be the current head
         if self.head is None:   # if the list is empty make the new_node the head and tail
             self.head = new_node
             self.tail = new_node
-        else:   # if the list is not empty then make the old head's previous reference the new_node and then update
+        else:   # if the list is not empty then make the old head's _obling reference the new_node and then update
             # the head to the new_node
-            self.head.previous = new_node
+            self.head._obling = new_node
             self.head = new_node
 
     def append(self, new_node):
         """ Insert a new node to the end of the deque"""
-        new_node.previous = self.tail
+        new_node._obling = self.tail
         if self.tail is None:   # if the list is empty make both the head and tail the new node
             self.head = new_node
             self.tail = new_node
         else:   # if the list is not empty then make the tail reference the new tail and set the new node as the
             # new tail
-            self.tail.next = new_node
+            self.tail._yibling = new_node
             self.tail = new_node
 
     def insert_before(self, target_node, new_node):
@@ -76,13 +74,13 @@ class DoublyLinkedList:
         if target_node is None:
             print('The specified target node, \'{}\' does not exist.'.format(target_node))
         else:
-            new_node.previous = target_node.previous
-            target_node.previous = new_node
-            new_node.next = target_node
-            if new_node.previous is not None:
-                new_node.previous.next = new_node
+            new_node._obling = target_node._obling
+            target_node._obling = new_node
+            new_node._yibling = target_node
+            if new_node._obling is not None:
+                new_node._obling._yibling = new_node
             if target_node == self.head:
-                self.head == new_node
+                self.head = new_node
 
     def insert_after(self, target_node, new_node):
         """ Insert a new node after the target node.
@@ -95,11 +93,11 @@ class DoublyLinkedList:
         if target_node is None:
             print('The specified target node, \'{}\' does not exist.'.format(target_node))
         else:
-            target_node.next = new_node
-            new_node.next = target_node.next
-            new_node.previous = target_node
-            if new_node.next is not None:
-                new_node.next.previous = new_node
+            target_node._yibling = new_node
+            new_node._yibling = target_node._yibling
+            new_node._obling = target_node
+            if new_node._yibling is not None:
+                new_node._yibling._obling = new_node
             if target_node is self.tail:
                 self.tail = new_node
 
@@ -118,8 +116,7 @@ class DoublyLinkedList:
     def remove_by_data(self, x):
         if self.head is None:   # check if list is empty
             raise IndexError('Doubly linked list is empty.')
-            return
-        elif self.head.next is None:    # check is list contains 1 item
+        elif self.head._yibling is None:    # check is list contains 1 item
             if self.head.data is x:
                 self.remove_head()
             else:
@@ -130,16 +127,16 @@ class DoublyLinkedList:
             return
         else:   # if list is not empty, contains just 1 item, or target node is not head:
             node = self.head
-            while node.next is not None:    # traverse list until target node is found
+            while node._yibling is not None:    # traverse list until target node is found
                 if node.data is x:
                     break
-                node = node.next
-            if node.next is not None:
-                node.previous.next = node.next
-                node.next.previous = node.previous
+                node = node._yibling
+            if node._yibling is not None:
+                node._obling._yibling = node._yibling
+                node._yibling._obling = node._obling
             else:
                 if node.data is x:
-                    node.previous.next = None
+                    node._obling._yibling = None
                 else:
                     raise ValueError('%s not in list' % x)
 
@@ -151,41 +148,26 @@ class DoublyLinkedList:
         node = self.head
         while node is not None:
             yield node
-            node = node.next
+            node = node._yibling
 
     def __str__(self):
         node = self.head
         nodes = []
         while node is not None:
             nodes.append(node.data)
-            node = node.next
+            node = node._yibling
         return " <-> ".join(str(nodes))
 
 
-class Node:
+class Family:
 
-    def __init__(self, data):
-        self.data = data
-        self.next = None
-        self.previous = None
-
-    def print_siblings(self):
-        if self.previous is None:
-            nodes = [self.data, self.next.data]
-        elif self.next is None:
-            nodes = [self.previous.data, self.data]
-        else:
-            nodes = [self.previous.data, self.data, self.next.data]
-        print(nodes)
-
-    def __str__(self):
-        return self.data
-
-
-class TrueCoachReader:
-
-    def __init__(self, parent):
+    def __init__(self, parent, data=None):
         self._parent = parent
+        self.data = data
+        self._parent = None
+        self._children = DoublyLinkedList()
+        self._yibling = None    # younger sibling / next
+        self._obling = None    # older sibling / previous
 
     def _get_parent(self, parent_type=None):
         if isinstance(self, parent_type if parent_type is not None else WorkoutLog):
@@ -193,19 +175,20 @@ class TrueCoachReader:
         else:
             return self._parent._get_parent(parent_type)
 
-    def _get_children(self, children_type=None):
-        if isinstance(self, children_type if children_type is not None else WorkoutLog):
-            return self
+    def print_siblings(self):
+        if self._obling is None:
+            nodes = [self.data, self._yibling.data]
+        elif self._yibling is None:
+            nodes = [self._obling.data, self.data]
         else:
-            return self._get_children(children_type)    # TODO: make this function work
+            nodes = [self._obling.data, self.data, self._yibling.data]
+        print(nodes)
 
-    def get_workout_list(self):
-        """ Returns a list of workout names as strings"""
-
-        return list(self._get_parent(WorkoutLog).workouts.keys())
+    def __str__(self):
+        return self.data
 
 
-class WorkoutLog(TrueCoachReader):
+class WorkoutLog(Family):
 
     def __init__(self, filename):
         super().__init__(self)
@@ -262,9 +245,6 @@ class WorkoutLog(TrueCoachReader):
         log = [line.split('\n')[0] for line in self.raw_content]
         return log
 
-    def __len__(self):
-        return len(self.workouts)
-
     def __getitem__(self, x):
         return self.workouts.__getitem__(x)
 
@@ -319,7 +299,7 @@ class WorkoutLog(TrueCoachReader):
         # return ret_values
 
 
-class Workout(Node, TrueCoachReader):
+class Workout(Family):
 
     def __init__(self, parent, title, raw_content):
         super().__init__(parent)
@@ -384,7 +364,7 @@ class Workout(Node, TrueCoachReader):
         return self.exercises[exercise_number]
 
 
-class Exercise(Node, TrueCoachReader):
+class Exercise(Family):
 
     def __init__(self, parent, raw_content):
         super().__init__(parent)
@@ -449,7 +429,7 @@ class Exercise(Node, TrueCoachReader):
         return self.protocols[set_number]
 
 
-class Protocol(Node, TrueCoachReader):
+class Protocol(Family):
 
     def __init__(self, parent, raw_content):
         super().__init__(parent)
@@ -559,7 +539,7 @@ class Protocol(Node, TrueCoachReader):
                 counter += 1
 
     def _get_previous_protocol_p1rm(self):
-        """ Get the p1rm value of the previous protocol object"""
+        """ Get the p1rm value of the _obling protocol object"""
 
         l_exer = self._get_parent(Exercise)
         for l_protocol in l_exer:
