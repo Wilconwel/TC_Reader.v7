@@ -13,6 +13,7 @@ class DoublyLinkedList:
     def __init__(self, nodes=None):
         self.head = None
         self.tail = None
+        self._nodes_as_dict = {}
         if nodes is not None:
             for elem in nodes:
                 self.append(Node(elem))
@@ -264,62 +265,58 @@ class WorkoutLog(TrueCoachReader):
     def __len__(self):
         return len(self.workouts)
 
-    def __getitem__(self, k):
-        key_list = list(self.workouts)
-        if isinstance(k, slice):
-            keys = key_list[k.start:k.stop:k.step]
-            workouts = [self.workouts.get(key) for key in keys]
-            return workouts
-        else:
-            key = key_list[k]
-            return self.workouts.get(key)  # TODO: find way to slice workout objects
+    def __getitem__(self, x):
+        return self.workouts.__getitem__(x)
 
     def get_sets_by_exercise(self, exercise):
-        """Find the set data for every instance of the given exercise, return a list
-
-        Positional arguments:
-        1) the exercise to be searched, inputted as a string
-        """
-
-        ret_values = []
-        for l_workouts in self.workouts.values():
-            for l_exer in l_workouts:
-                if l_exer.name == exercise:
-                    for l_protocol in l_exer.protocols:
-                        ret_values.append(l_protocol.sets)
-        return ret_values
+        pass
+        # """Find the set data for every instance of the given exercise, return a list
+        #
+        # Positional arguments:
+        # 1) the exercise to be searched, inputted as a string
+        # """
+        #
+        # ret_values = []
+        # for l_workouts in self.workouts.():
+        #     for l_exer in l_workouts:
+        #         if l_exer.name == exercise:
+        #             for l_protocol in l_exer.protocols:
+        #                 ret_values.append(l_protocol.sets)
+        # return ret_values
 
     def get_parameter_by_exercise(self, exercise, parameter):
-        """Find the data for the given parameter for the every instance of the given exercise, return a list
-
-        Positional arguments:
-        1) the exercise to be searched, inputted as a string
-        2) the data to be returned, inputted as a string (must be 'sets', 'reps', 'p1rm', 'rpe')
-        """
-
-        ret_values = []
-        for l_workouts in self.workouts.values():
-            for l_exer in l_workouts:
-                if l_exer.name == exercise:
-                    for l_protocol in l_exer.protocols:
-                        ret_values.append(getattr(l_protocol, parameter))
-        return ret_values
+        pass
+        # """Find the data for the given parameter for the every instance of the given exercise, return a list
+        #
+        # Positional arguments:
+        # 1) the exercise to be searched, inputted as a string
+        # 2) the data to be returned, inputted as a string (must be 'sets', 'reps', 'p1rm', 'rpe')
+        # """
+        #
+        # ret_values = []
+        # for l_workouts in self.workouts.values():
+        #     for l_exer in l_workouts:
+        #         if l_exer.name == exercise:
+        #             for l_protocol in l_exer.protocols:
+        #                 ret_values.append(getattr(l_protocol, parameter))
+        # return ret_values
 
     def get_parameter_by_exercise_category(self, exercise_category, parameter):
-        """Find the data for the given parameter for all exercise instances in the given exercise category, return a list
-
-        Positional arguments:
-        1) the exercise category to be searched, inputted as a string
-        2) the data to be returned, inputted as a string (must be 'sets', 'reps', 'p1rm', 'rpe')
-        """
-
-        ret_values = []
-        for l_workouts in self.workouts.values():
-            for l_exer in l_workouts:
-                if l_exer.category == exercise_category:
-                    for l_protocol in l_exer.protocols:
-                        ret_values.append(getattr(l_protocol, parameter))
-        return ret_values
+        pass
+        # """Find the data for the given parameter for all exercise instances in the given exercise category, return a list
+        #
+        # Positional arguments:
+        # 1) the exercise category to be searched, inputted as a string
+        # 2) the data to be returned, inputted as a string (must be 'sets', 'reps', 'p1rm', 'rpe')
+        # """
+        #
+        # ret_values = []
+        # for l_workouts in self.workouts.values():
+        #     for l_exer in l_workouts:
+        #         if l_exer.category == exercise_category:
+        #             for l_protocol in l_exer.protocols:
+        #                 ret_values.append(getattr(l_protocol, parameter))
+        # return ret_values
 
 
 class Workout(Node, TrueCoachReader):
@@ -335,8 +332,7 @@ class Workout(Node, TrueCoachReader):
         self.mesocycle = None
         self.microcycle = None
         self.day = None
-        self.next = None
-        self.previous = None
+
 
         # if regex match, update mesocycle, microcycle, and day
         if re.search('[0-9]\.[0-9]\.', self.title):  # TODO: write better regex
@@ -383,9 +379,6 @@ class Workout(Node, TrueCoachReader):
     def __str__(self):
         workout = [line.split('\n')[0] for line in self.raw_content]
         return '\n'.join(workout)
-
-    def __len__(self):
-        return len(self.exercises)
 
     def __getitem__(self, exercise_number):
         return self.exercises[exercise_number]
