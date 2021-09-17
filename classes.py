@@ -150,13 +150,13 @@ class DoublyLinkedList:
             yield node
             node = node._yibling
 
-    def __str__(self):
-        node = self.head
-        nodes = []
-        while node is not None:
-            nodes.append(node.data)
-            node = node._yibling
-        return " <-> ".join(str(nodes))
+    # def __str__(self):
+    #     node = self.head
+    #     nodes = []
+    #     while node is not None:
+    #         nodes.append(node.data)
+    #         node = node._yibling
+    #     return " <-> ".join(str(nodes))
 
 
 class Family:
@@ -164,7 +164,7 @@ class Family:
     def __init__(self, parent, data=None):
         self._parent = parent
         self.data = data
-        self._parent = None
+        self._parent = parent
         self._children = DoublyLinkedList()
         self._yibling = None    # younger sibling / next
         self._obling = None    # older sibling / previous
